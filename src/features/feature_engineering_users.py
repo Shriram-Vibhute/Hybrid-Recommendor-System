@@ -101,7 +101,7 @@ def save_data(filtered_songs: pd.DataFrame, interaction_matrix: scipy.sparse.csr
     try:
         # Saving Filtered Songs data
         save_songs_path = save_path / "filtered_songs.csv"
-        filtered_songs.to_csv(save_songs_path)
+        filtered_songs.sort_values(by = 'track_id').to_csv(save_songs_path)
 
         # Save interaction matrix
         save_matrix_path = save_path / "interaction_matrix"

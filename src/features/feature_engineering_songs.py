@@ -83,7 +83,7 @@ def main():
         home_path = current_path.parent.parent.parent
         data_path = home_path / "data"
         data_path.mkdir(parents=True, exist_ok=True)
-        songs_data_url = data_path / "interim" / "songs_interim.csv"
+        songs_data_url = data_path / "processed" / "filtered_songs.csv"
 
         # Storing Transformed Data
         save_data_path = data_path / "processed" / "songs_processed"

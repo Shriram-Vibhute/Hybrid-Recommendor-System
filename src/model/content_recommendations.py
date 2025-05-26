@@ -42,7 +42,7 @@ def main():
     data_path = home_path / "data"
     data_path.mkdir(parents=True, exist_ok=True)
 
-    songs_data_url = data_path / "interim" / "songs_interim.csv"
+    songs_data_url = data_path / "processed" / "filtered_songs.csv"
 
     # load the data
     df_songs = pd.read_csv(songs_data_url)
