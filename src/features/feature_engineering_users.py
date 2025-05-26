@@ -53,6 +53,12 @@ def transform_data(dd_users: dd) -> dask.dataframe:
         track_mapping = dd_users['track_id'].cat.codes
         # .cat is an accessor just like .str, .codes is encoding into integers
 
+        # Testing the difference
+        """
+            print(dd_users['track_id'].cat.categories) # This is in the sorted form
+            print(dd_users.compute()['track_id']) # This is not in sorted form
+        """
+
         # Concatinating those encoded columns into our primary dataset
         dd_users = dd_users.assign(
             user_idx=user_mapping,
@@ -82,7 +88,7 @@ def interaction_matrix(dd_users) -> scipy.sparse.csr_matrix:
         n_tracks = row_indices.nunique()
         n_users = col_indices.nunique()
         sparse_matrix = csr_matrix((values, (row_indices, col_indices)), shape=(n_tracks, n_users))
-        return sparse_matrix
+        return sparse_matrix, dd_users['track_id'].cat.categories.unique()
     except TypeError as e:
         raise TypeError(f"Failed to build interaction matrix. The argument dd_users should be a dask dataframe. {e}")
     except ValueError as e:
@@ -90,7 +96,7 @@ def interaction_matrix(dd_users) -> scipy.sparse.csr_matrix:
     except Exception as e:
         raise RuntimeError(f"An unexpected error occurred while building interaction matrix. {e}")
     
-def save_data(filtered_songs: pd.DataFrame, interaction_matrix: scipy.sparse.csr_matrix, save_path: str) -> None:
+def save_data(filtered_songs: pd.DataFrame, interaction_matrix: scipy.sparse.csr_matrix, unique_track_ids: pd.Series, save_path: str) -> None:
     """Saving all the Atrifacts"""
     try:
         # Saving Filtered Songs data
@@ -100,6 +106,10 @@ def save_data(filtered_songs: pd.DataFrame, interaction_matrix: scipy.sparse.csr
         # Save interaction matrix
         save_matrix_path = save_path / "interaction_matrix"
         save_npz(save_matrix_path, interaction_matrix)
+
+        # Save unique track ids
+        unique_track_ids_path = save_path / "unique_track_ids"
+        np.save(unique_track_ids_path, unique_track_ids, allow_pickle = True)
     except FileNotFoundError as e:
         raise FileNotFoundError(f"Failed to save the transformed data. The specified directory {save_path} does not exist. {e}")
     except NotADirectoryError as e:
@@ -131,10 +141,10 @@ def main():
         dd_users = transform_data(dd_users = dd_users)
 
         # Interaction Matrix
-        interaction_array = interaction_matrix(dd_users = dd_users)
+        interaction_array, unique_track_ids = interaction_matrix(dd_users = dd_users)
 
         # Saving the transformed data
-        save_data(filtered_songs = filtered_songs, interaction_matrix = interaction_array, save_path = save_data_path)
+        save_data(filtered_songs = filtered_songs, interaction_matrix = interaction_array, unique_track_ids = unique_track_ids, save_path = save_data_path)
     except Exception as e:
         raise RuntimeError("Unexpected error occured!")
 
