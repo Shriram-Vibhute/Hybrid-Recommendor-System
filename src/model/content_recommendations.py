@@ -4,14 +4,9 @@ import scipy
 import pathlib
 from sklearn.metrics.pairwise import cosine_similarity
 
-def calculate_similarity_scores(input_vector: scipy.sparse.csr_matrix, songs_processed: scipy.sparse.csr_matrix):
-    # Calculate similarity scores
-    similarity_scores = cosine_similarity(input_vector, songs_processed)
-    return similarity_scores
+def content_recommendation(song_name: str, artist_name: str, df_songs: pd.DataFrame, transformed_data: scipy.sparse.csr_matrix):
 
-def content_recommendation(song_name: str, artist_name: str, df_songs: pd.DataFrame, transformed_data: scipy.sparse.csr_matrix, k: int = 10):
-
-    # convert song name and artist name to lowercase
+    # Convert song name and artist name to lowercase
     song_name = song_name.lower()
     artist_name = artist_name.lower()
 
@@ -22,18 +17,14 @@ def content_recommendation(song_name: str, artist_name: str, df_songs: pd.DataFr
     input_vector = transformed_data[song_index].reshape(1,-1)
 
     # Calculate similarity scores
-    similarity_scores = calculate_similarity_scores(input_vector, transformed_data)
-    print(np.sort(similarity_scores).ravel()[-k-1:][::-1])
+    content_similarity_scores = cosine_similarity(input_vector, transformed_data)
 
-    # Get the top k songs
-    top_k_songs_indexes = np.argsort(similarity_scores.ravel())[-k-1:][::-1]
+    # Returning similarities scores
+    return content_similarity_scores
 
-    # Get the top k songs names
-    top_k_songs_names = df_songs.iloc[top_k_songs_indexes]
-
-    # Print the top k songs
-    top_k_list = top_k_songs_names[['name','artist','spotify_preview_url']].reset_index(drop=True)
-    return top_k_list
+def recommended_songs(df_songs: pd.DataFrame, similarity_scores: np.ndarray, k: int = 10):
+    idx = np.argsort(similarity_scores.ravel())[::-1][:k+1]
+    print(df_songs.loc[idx, ["name", "artist"]])
 
 def main():
     # Creating Paths
@@ -42,7 +33,7 @@ def main():
     data_path = home_path / "data"
     data_path.mkdir(parents=True, exist_ok=True)
 
-    songs_data_url = data_path / "processed" / "filtered_songs.csv"
+    songs_data_url = data_path / "interim" / "filtered_songs.csv"
 
     # load the data
     df_songs = pd.read_csv(songs_data_url)
@@ -50,14 +41,12 @@ def main():
 
     # Calculate Similarity Scores
     recommendations = content_recommendation(
-        song_name = "seven nation army",
-        artist_name = "the white stripes",
+        song_name = "stickwitu",
+        artist_name = "the pussycat dolls",
         df_songs = df_songs,
         transformed_data = df_songs_transformed,
-        k = 10
     )
-
-    print(recommendations)
     
+    recommended_songs(df_songs = df_songs, similarity_scores = recommendations, k = 10)
 if __name__ == "__main__":
     main()

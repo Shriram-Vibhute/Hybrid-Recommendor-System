@@ -8,28 +8,11 @@ from category_encoders.count import CountEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.compose import ColumnTransformer
 
-def load_data(songs_data_url: str) -> pd.DataFrame:
-    """Loading Songs Data"""
-    try:
-        df_songs = pd.read_csv(songs_data_url)
-
-        # Dropping the unwanted features
-        df_songs = df_songs.drop(columns=["track_id","name","spotify_preview_url"])
-        return df_songs
-    except pd.errors.EmptyDataError as e:
-        raise ValueError(f"Failed to load data from {songs_data_url}. The file is empty.") from e
-    except pd.errors.ParserError as e:
-        raise ValueError(f"Failed to parse data from {songs_data_url}. Check the file format.") from e
-    except FileNotFoundError as e:
-        raise FileNotFoundError(f"Failed to find the file at {songs_data_url}") from e
-    except Exception as e:
-        raise RuntimeError(f"An unexpected error occurred while loading data from {songs_data_url}") from e
-
-def train_transformer(df_songs: pd.DataFrame):
+def train_transformer(df_songs: pd.DataFrame) -> ColumnTransformer:
     """Training the Transformer"""
     try:
         # Columns to Transform
-        frequency_enode_cols = ['year']
+        frequency_enode_cols = ['year'] # Due to high cardinality and preserve the current trend
         ohe_cols = ['artist', "time_signature", "key"]
         tfidf_col = 'tags'
         standard_scale_cols = ["loudness"]
@@ -53,9 +36,9 @@ def train_transformer(df_songs: pd.DataFrame):
         # Return the Transformer
         return transformer
     except KeyError as e:
-        raise KeyError(f"The column {e} does not exist in the DataFrame") from e
+        raise KeyError(f"The column {e} does not exist in the DataFrame")
     except Exception as e:
-        raise Exception(f"An unexpected error occurred while training the transformer. {e}") from e
+        raise Exception(f"An unexpected error occurred while training the transformer. {e}")
     
 def transform_data(df_songs: pd.DataFrame, transformer: ColumnTransformer) -> scipy.sparse.csr_matrix:
     """Transforming the DataFrame"""
@@ -64,7 +47,7 @@ def transform_data(df_songs: pd.DataFrame, transformer: ColumnTransformer) -> sc
         transformed_data = transformer.transform(df_songs)
         return transformed_data
     except Exception as e:
-        raise RuntimeError(f"An unexpected error occurred while transforming the data. {e}") from e
+        raise RuntimeError(f"An unexpected error occurred while transforming the data. {e}")
 
 def save_transformed_data(transformed_df: scipy.sparse.csr_matrix, save_path: str) -> None:
     """Saving all the Atrifacts"""
@@ -72,9 +55,9 @@ def save_transformed_data(transformed_df: scipy.sparse.csr_matrix, save_path: st
         # Save the transformed data in sparse format
         save_npz(save_path, transformed_df)
     except OSError as e:
-        raise OSError(f"Failed to save the transformed data to {save_path}. {e}") from e
+        raise OSError(f"Failed to save the transformed data to {save_path}. {e}")
     except Exception as e:
-        raise RuntimeError(f"An unexpected error occurred while saving the transformed data. {e}") from e
+        raise RuntimeError(f"An unexpected error occurred while saving the transformed data. {e}")
 
 def main():
     try:
@@ -83,13 +66,15 @@ def main():
         home_path = current_path.parent.parent.parent
         data_path = home_path / "data"
         data_path.mkdir(parents=True, exist_ok=True)
-        songs_data_url = data_path / "processed" / "filtered_songs.csv"
+        songs_data_url = data_path / "interim" / "filtered_songs.csv"
 
         # Storing Transformed Data
         save_data_path = data_path / "processed" / "songs_processed"
 
         # Loading Data
-        df_songs = load_data(songs_data_url = songs_data_url)
+        df_songs = pd.read_csv(filepath_or_buffer = songs_data_url)
+        df_songs = df_songs.drop(columns = ['track_id', 'name', 'spotify_preview_url'])
+        df_songs['year'] = df_songs['year'].astype(str)  # or .astype('category')
 
         # Training Transformer
         transformer = train_transformer(df_songs = df_songs)
