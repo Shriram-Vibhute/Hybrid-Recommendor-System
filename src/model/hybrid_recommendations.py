@@ -3,8 +3,9 @@ import pandas as pd
 import scipy
 import pathlib
 
-from content_recommendations import content_recommendation
-from collaburative_recommendations import collaborative_recommendation
+# Import from the same package
+from .content_recommendations import content_recommendation
+from .collaburative_recommendations import collaborative_recommendation
 
 class HybridRecommenderSystem:
     
@@ -60,7 +61,7 @@ class HybridRecommenderSystem:
         
         # index values of recommendations
         idx = np.argsort(weighted_scores.ravel())[-self.number_of_recommendations - 1:][::-1]
-        return songs_data.loc[idx, ["name", "artist"]]
+        return songs_data.loc[idx, ["name", "artist", "spotify_preview_url"]]
 
 def main():
     # Creating Paths
